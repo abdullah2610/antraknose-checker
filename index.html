@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#16a34a" />
+<title>Cek Risiko Antraknose Cabai — BRMP Kalbar</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html, body { -webkit-tap-highlight-color: transparent; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .card { background: white; border-radius: 1rem; box-shadow: 0 4px 14px rgba(0,0,0,.06); }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  .chev { transition: transform .2s ease; }
+  details[open] .chev { transform: rotate(90deg); }
+  input[type=checkbox] { accent-color: #16a34a; }
+  .risk-bar { height: 14px; border-radius: 9999px; background: linear-gradient(to right, #16a34a 0%, #eab308 50%, #f97316 75%, #dc2626 100%); position: relative; }
+  .risk-needle { position: absolute; top: -6px; width: 4px; height: 26px; border-radius: 2px; background: #111827; box-shadow: 0 0 0 2px white; transition: left .35s cubic-bezier(.2,.8,.2,1); }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600; }
+  .seg { display: inline-flex; background: #f3f4f6; border-radius: 9999px; padding: 4px; gap: 4px; }
+  .seg button { padding: 6px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500; color: #374151; }
+  .seg button.active { background: white; box-shadow: 0 1px 2px rgba(0,0,0,.08); color: #111827; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 9999px; background: #ecfccb; color: #365314; font-weight: 600; }
+  .cat-bar-track { background: #f3f4f6; border-radius: 9999px; height: 8px; overflow: hidden; }
+  .cat-bar-fill { height: 100%; background: #16a34a; transition: width .3s ease; }
+  .num { font-variant-numeric: tabular-nums; }
+  @media (min-width: 768px) {
+    body { background: linear-gradient(180deg, #f0fdf4, #ffffff); }
+  }
+</style>
+</head>
+<body class="bg-green-50 min-h-screen text-gray-900">
+
+<header class="bg-green-700 text-white px-4 py-4 sticky top-0 z-30 shadow-md">
+  <div class="max-w-3xl mx-auto flex items-center justify-between">
+    <div>
+      <div class="text-[11px] uppercase tracking-wider opacity-80">BRMP Kalimantan Barat</div>
+      <h1 class="text-base font-bold leading-tight">Cek Risiko Antraknose Cabai</h1>
+    </div>
+    <button id="btnReset" class="text-xs bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-full">Reset</button>
+  </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-4 py-4 space-y-4 pb-24">
+
+  <!-- Dashboard -->
+  <section class="card p-4">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-semibold">Dashboard Risiko</h2>
+      <span id="riskBadge" class="badge bg-gray-200 text-gray-700">—</span>
+    </div>
+
+    <div class="flex items-baseline gap-2">
+      <span id="riskScore" class="text-4xl font-bold num">0</span>
+      <span class="text-sm text-gray-500">/ 100</span>
+      <span id="riskLabel" class="ml-auto text-sm font-semibold text-gray-700">Rendah</span>
+    </div>
+
+    <div class="mt-3 risk-bar">
+      <div id="riskNeedle" class="risk-needle" style="left: 0%;"></div>
+    </div>
+    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+      <span>Rendah</span><span>Sedang</span><span>Tinggi</span><span>Sangat Tinggi</span>
+    </div>
+
+    <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+      <div class="bg-green-50 rounded-lg p-2">
+        <div class="text-[10px] text-green-800">Pencegahan</div>
+        <div id="prevScore" class="text-lg font-bold text-green-700 num">0%</div>
+      </div>
+      <div class="bg-orange-50 rounded-lg p-2">
+        <div class="text-[10px] text-orange-800">Tekanan Cuaca</div>
+        <div id="weatherScore" class="text-lg font-bold text-orange-700 num">0</div>
+      </div>
+      <div class="bg-blue-50 rounded-lg p-2">
+        <div class="text-[10px] text-blue-800">Item Diterapkan</div>
+        <div id="itemCount" class="text-lg font-bold text-blue-700 num">0</div>
+      </div>
+    </div>
+
+    <p id="advice" class="mt-3 text-xs text-gray-600 leading-relaxed"></p>
+  </section>
+
+  <!-- Cuaca & Lingkungan -->
+  <section class="card p-4">
+    <h2 class="font-semibold mb-3">Faktor Cuaca & Lingkungan</h2>
+
+    <div class="space-y-4">
+      <div>
+        <label class="text-xs text-gray-600">Curah hujan 7 hari terakhir</label>
+        <div class="seg mt-1 w-full" data-group="rain">
+          <button data-val="0" class="flex-1">Rendah</button>
+          <button data-val="10" class="flex-1">Sedang</button>
+          <button data-val="20" class="flex-1">Tinggi</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-gray-600">Kelembaban udara (RH)</label>
+        <div class="seg mt-1 w-full" data-group="rh">
+          <button data-val="0" class="flex-1">&lt; 70%</button>
+          <button data-val="8" class="flex-1">70–80%</button>
+          <button data-val="15" class="flex-1">&gt; 80%</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-gray-600">Suhu rata-rata harian</label>
+        <div class="seg mt-1 w-full" data-group="temp">
+          <button data-val="3" class="flex-1">&lt; 20°C</button>
+          <button data-val="6" class="flex-1">20–24°C</button>
+          <button data-val="10" class="flex-1">25–30°C</button>
+          <button data-val="5" class="flex-1">&gt; 30°C</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-gray-600">Riwayat antraknose di lahan/sekitar</label>
+        <div class="seg mt-1 w-full" data-group="hist">
+          <button data-val="0" class="flex-1">Tidak ada</button>
+          <button data-val="5" class="flex-1">Pernah</button>
+          <button data-val="10" class="flex-1">Sedang muncul</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Breakdown per Kategori -->
+  <section class="card p-4">
+    <h2 class="font-semibold mb-3">Cakupan per Kategori</h2>
+    <div id="catBreakdown" class="space-y-3"></div>
+  </section>
+
+  <!-- Checklist -->
+  <section class="card p-4">
+    <h2 class="font-semibold mb-3">Checklist Rekomendasi</h2>
+    <div id="checklist" class="space-y-3"></div>
+  </section>
+
+  <footer class="text-center text-[11px] text-gray-500 pt-2">
+    Disusun berdasarkan Petunjuk Pencegahan & Penanganan Antraknose pada Cabai — BRMP Kalbar.<br/>
+    Data tersimpan otomatis di perangkat ini.
+  </footer>
+</main>
+
+<script>
+// =============== Data Model ===============
+const CATEGORIES = [
+  {
+    id: "A", name: "Pemilihan Varietas", icon: "🌶️",
+    items: [
+      { id: "A1", w: 10, t: "Pakai varietas tahan/agak tahan",
+        d: "Mis. Lembang 1, Arimbi, Gada, Ori 212, Roket, atau lokal yang terbukti tahan." }
+    ]
+  },
+  {
+    id: "B", name: "Perlakuan Benih", icon: "🌱",
+    items: [
+      { id: "B1", w: 4, t: "Hot water treatment 50°C selama 30 menit", d: "Pakai termometer, jaga suhu stabil." },
+      { id: "B2", w: 4, t: "Aplikasi Trichoderma sp. pada benih sebelum semai" },
+      { id: "B3", w: 4, t: "Gunakan benih bersertifikat dari sumber terpercaya" }
+    ]
+  },
+  {
+    id: "C", name: "Sanitasi Lahan", icon: "🧹",
+    items: [
+      { id: "C1", w: 8, t: "Buang & musnahkan buah bergejala segera", d: "Kubur dalam ≥50 cm + kapur (hindari membakar di lahan)." },
+      { id: "C2", w: 5, t: "Tidak membiarkan buah jatuh di tanah" },
+      { id: "C3", w: 5, t: "Rotasi tanaman 2–3 musim dengan non-Solanaceae" }
+    ]
+  },
+  {
+    id: "D", name: "Teknik Budidaya", icon: "🌾",
+    items: [
+      { id: "D1", w: 4, t: "Jarak tanam lebar (mis. 60×70 cm)" },
+      { id: "D2", w: 4, t: "Pruning daun bawah agar tidak menyentuh tanah" },
+      { id: "D3", w: 6, t: "Pakai mulsa plastik (perak di atas, hitam di bawah)" },
+      { id: "D4", w: 4, t: "Hindari pemupukan nitrogen berlebih" }
+    ]
+  },
+  {
+    id: "E", name: "Pengelolaan Air", icon: "💧",
+    items: [
+      { id: "E1", w: 5, t: "Bedengan tinggi 30–40 cm + parit drainase baik" },
+      { id: "E2", w: 4, t: "Tidak menyiram dari atas daun (terutama sore)" },
+      { id: "E3", w: 3, t: "Penyiraman pagi hari agar daun cepat kering" }
+    ]
+  },
+  {
+    id: "F", name: "Pengendalian Hayati", icon: "🦠",
+    items: [
+      { id: "F1", w: 6, t: "Aplikasi Trichoderma rutin tiap 7–10 hari", d: "Dosis ±2,5–5 kg/ha sesuai produk." },
+      { id: "F2", w: 3, t: "Bacillus subtilis / Pseudomonas fluorescens" },
+      { id: "F3", w: 3, t: "Ekstrak daun sirih + bawang putih (pendukung)" }
+    ]
+  },
+  {
+    id: "G", name: "Monitoring & Scouting", icon: "🔍",
+    items: [
+      { id: "G1", w: 4, t: "Scouting minimal 1× per minggu" },
+      { id: "G2", w: 3, t: "Periksa minimal 10 tanaman per petak (acak)" },
+      { id: "G3", w: 3, t: "Catat persentase buah terserang", d: "Ambang tindakan intensif: > 5%." }
+    ]
+  },
+  {
+    id: "H", name: "Pasca Panen", icon: "📦",
+    items: [
+      { id: "H1", w: 3, t: "Panen tepat waktu, tidak lewat masak" },
+      { id: "H2", w: 3, t: "Sortasi buah sehat vs sakit di lapangan" },
+      { id: "H3", w: 2, t: "Simpan di tempat kering & berventilasi baik" }
+    ]
+  }
+];
+
+const STORAGE_KEY = "antraknose-checker-v1";
+
+const state = {
+  checks: {},
+  weather: { rain: 0, rh: 0, temp: 0, hist: 0 }
+};
+
+// =============== Persist ===============
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    if (obj && typeof obj === "object") {
+      if (obj.checks && typeof obj.checks === "object") state.checks = obj.checks;
+      if (obj.weather && typeof obj.weather === "object") {
+        state.weather = { ...state.weather, ...obj.weather };
+      }
+    }
+  } catch (e) { /* ignore */ }
+}
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// =============== Compute ===============
+function totalMaxWeight() {
+  return CATEGORIES.reduce((s, c) => s + c.items.reduce((a, i) => a + i.w, 0), 0);
+}
+function checkedWeight() {
+  let s = 0;
+  for (const c of CATEGORIES) for (const i of c.items) if (state.checks[i.id]) s += i.w;
+  return s;
+}
+function categoryStats(cat) {
+  const max = cat.items.reduce((a, i) => a + i.w, 0);
+  const got = cat.items.reduce((a, i) => a + (state.checks[i.id] ? i.w : 0), 0);
+  const pct = max ? Math.round((got / max) * 100) : 0;
+  const checked = cat.items.filter(i => state.checks[i.id]).length;
+  return { max, got, pct, checked, total: cat.items.length };
+}
+function weatherPressure() {
+  const w = state.weather;
+  return (w.rain || 0) + (w.rh || 0) + (w.temp || 0) + (w.hist || 0);
+}
+function computeRisk() {
+  const maxW = totalMaxWeight();
+  const cw = checkedWeight();
+  const prevPct = maxW ? (cw / maxW) : 0;
+  const wp = weatherPressure();
+  const raw = 50 + wp - 0.6 * (prevPct * 100);
+  return {
+    risk: Math.max(0, Math.min(100, Math.round(raw))),
+    prevPct: Math.round(prevPct * 100),
+    weather: wp,
+    items: Object.values(state.checks).filter(Boolean).length
+  };
+}
+function levelFor(r) {
+  if (r <= 25) return { label: "Rendah", color: "bg-green-100 text-green-800", tip: "Risiko rendah. Pertahankan praktik pencegahan & monitoring rutin." };
+  if (r <= 50) return { label: "Sedang", color: "bg-yellow-100 text-yellow-800", tip: "Tingkatkan sanitasi & aplikasi Trichoderma rutin. Awas saat hujan." };
+  if (r <= 75) return { label: "Tinggi", color: "bg-orange-100 text-orange-800", tip: "Risiko tinggi. Petik buah bergejala, perbaiki drainase, intensifkan agens hayati." };
+  return { label: "Sangat Tinggi", color: "bg-red-100 text-red-800", tip: "Tindakan kuratif segera: sortasi ketat, fungisida sistemik (rotasi FRAC), konsultasi PPL." };
+}
+function barColor(pct) {
+  if (pct >= 80) return "#16a34a";
+  if (pct >= 50) return "#84cc16";
+  if (pct >= 25) return "#eab308";
+  return "#f97316";
+}
+
+// =============== DOM helpers (no innerHTML) ===============
+function el(tag, attrs, children) {
+  const node = document.createElement(tag);
+  if (attrs) {
+    for (const k in attrs) {
+      const v = attrs[k];
+      if (v == null) continue;
+      if (k === "class") node.className = v;
+      else if (k === "text") node.textContent = v;
+      else if (k === "data") {
+        for (const dk in v) node.dataset[dk] = v[dk];
+      } else if (k === "style") {
+        for (const sk in v) node.style[sk] = v[sk];
+      } else {
+        node.setAttribute(k, v);
+      }
+    }
+  }
+  if (children) {
+    for (const c of children) {
+      if (c == null) continue;
+      node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    }
+  }
+  return node;
+}
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+// Inline chevron SVG (static markup, safe)
+function chevSvg() {
+  const svgNs = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNs, "svg");
+  svg.setAttribute("class", "chev w-4 h-4 text-gray-500");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "2");
+  const path = document.createElementNS(svgNs, "path");
+  path.setAttribute("d", "M9 5l7 7-7 7");
+  svg.appendChild(path);
+  return svg;
+}
+
+// =============== Render ===============
+function renderChecklist() {
+  const cl = document.getElementById("checklist");
+  clear(cl);
+
+  for (const cat of CATEGORIES) {
+    const st = categoryStats(cat);
+
+    const summary = el("summary", { class: "flex items-center justify-between gap-2 px-3 py-3 bg-gray-50" }, [
+      el("div", { class: "flex items-center gap-2 min-w-0" }, [
+        el("span", { class: "text-lg", text: cat.icon }),
+        el("span", { class: "font-medium truncate", text: cat.name })
+      ]),
+      el("div", { class: "flex items-center gap-2 shrink-0" }, [
+        el("span", { class: "pill num", text: `${st.checked}/${st.total}` }),
+        chevSvg()
+      ])
+    ]);
+
+    const itemsBox = el("div", { class: "p-2 space-y-1" });
+    for (const i of cat.items) {
+      const cb = el("input", {
+        type: "checkbox",
+        class: "mt-1 w-5 h-5 rounded border-gray-300",
+        data: { item: i.id }
+      });
+      cb.checked = !!state.checks[i.id];
+
+      const row = el("label", { class: "flex items-start gap-3 p-2 rounded-lg hover:bg-green-50 active:bg-green-100 cursor-pointer" }, [
+        cb,
+        el("div", { class: "flex-1 min-w-0" }, [
+          el("div", { class: "text-sm font-medium leading-snug", text: i.t }),
+          i.d ? el("div", { class: "text-[11px] text-gray-500 mt-0.5", text: i.d }) : null
+        ]),
+        el("span", { class: "text-[10px] text-gray-400 num shrink-0", text: `+${i.w}` })
+      ]);
+      itemsBox.appendChild(row);
+    }
+
+    const det = el("details", { class: "border border-gray-100 rounded-xl overflow-hidden" }, [summary, itemsBox]);
+    det.open = true;
+    cl.appendChild(det);
+  }
+}
+
+function renderBreakdown() {
+  const cb = document.getElementById("catBreakdown");
+  clear(cb);
+  for (const cat of CATEGORIES) {
+    const s = categoryStats(cat);
+    const fill = el("div", { class: "cat-bar-fill", style: { width: s.pct + "%", background: barColor(s.pct) } });
+    const node = el("div", null, [
+      el("div", { class: "flex items-center justify-between text-xs mb-1" }, [
+        el("span", { class: "font-medium", text: `${cat.icon} ${cat.name}` }),
+        el("span", { class: "text-gray-500 num", text: s.pct + "%" })
+      ]),
+      el("div", { class: "cat-bar-track" }, [fill])
+    ]);
+    cb.appendChild(node);
+  }
+}
+
+function renderWeather() {
+  document.querySelectorAll('[data-group]').forEach(group => {
+    const key = group.getAttribute('data-group');
+    const cur = state.weather[key];
+    group.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', Number(b.dataset.val) === Number(cur));
+    });
+  });
+}
+
+function renderDashboard() {
+  const r = computeRisk();
+  const lv = levelFor(r.risk);
+  document.getElementById("riskScore").textContent = String(r.risk);
+  document.getElementById("riskLabel").textContent = lv.label;
+  document.getElementById("prevScore").textContent = r.prevPct + "%";
+  document.getElementById("weatherScore").textContent = "+" + r.weather;
+  document.getElementById("itemCount").textContent = String(r.items);
+  document.getElementById("riskNeedle").style.left = `calc(${r.risk}% - 2px)`;
+  const badge = document.getElementById("riskBadge");
+  badge.className = "badge " + lv.color;
+  badge.textContent = lv.label.toUpperCase();
+  document.getElementById("advice").textContent = lv.tip;
+}
+
+function render() {
+  renderChecklist();
+  renderBreakdown();
+  renderWeather();
+  renderDashboard();
+}
+
+// =============== Events ===============
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.matches('input[type=checkbox][data-item]')) {
+    state.checks[t.dataset.item] = t.checked;
+    save();
+    renderBreakdown();
+    renderDashboard();
+    // update pill counts in checklist headers without rebuilding everything
+    const cat = CATEGORIES.find(c => c.items.some(i => i.id === t.dataset.item));
+    if (cat) {
+      const st = categoryStats(cat);
+      const detEls = document.querySelectorAll('#checklist details');
+      const idx = CATEGORIES.indexOf(cat);
+      const det = detEls[idx];
+      if (det) {
+        const pill = det.querySelector('.pill');
+        if (pill) pill.textContent = `${st.checked}/${st.total}`;
+      }
+    }
+  }
+});
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest('[data-group] button');
+  if (btn) {
+    const group = btn.closest('[data-group]').getAttribute('data-group');
+    state.weather[group] = Number(btn.dataset.val);
+    save();
+    renderWeather();
+    renderDashboard();
+    return;
+  }
+  if (e.target.id === "btnReset") {
+    if (confirm("Reset semua centang & input cuaca?")) {
+      state.checks = {};
+      state.weather = { rain: 0, rh: 0, temp: 0, hist: 0 };
+      save();
+      render();
+    }
+  }
+});
+
+// =============== Init ===============
+load();
+render();
+</script>
+</body>
+</html>
