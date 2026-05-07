@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- stem -->
+  <path d="M17 5C18 3 22 3 21 7C19 6 18 7 17 9" fill="#166534"/>
+  <!-- leaf -->
+  <path d="M17 8C15 5 11 6 12 9C14 8 16 8 17 10" fill="#16a34a"/>
+  <!-- chili body -->
+  <path d="M17 10C13 12 11 17 11 21C11 26 13 30 17 30C21 30 23 26 23 21C23 17 21 12 17 10Z" fill="#dc2626"/>
+  <!-- shine highlight -->
+  <path d="M14 16C13 19 13 23 14 26" stroke="#fca5a5" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+</svg>
